@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Admin Veter</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0F172A;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .wrap{max-width:420px;width:100%}
+  h1{color:#fff;font-size:22px;font-weight:800;text-align:center;margin-bottom:28px;letter-spacing:.3px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  a.card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;background:#1E293B;border:1px solid #334155;border-radius:14px;padding:28px 12px;text-decoration:none;color:#fff;font-weight:700;font-size:15px;transition:transform .12s,background .12s}
+  a.card:hover{background:#27354A;transform:translateY(-2px)}
+  .flag{font-size:30px}
+  footer{text-align:center;color:#64748B;font-size:12px;margin-top:26px}
+</style>
+</head>
+<body>
+<script>
+(function(){
+  var PASS='Maradona.10';
+  var ok=sessionStorage.getItem('veterAuth')===PASS;
+  while(!ok){
+    var input=prompt('Veter — Passphrase de acceso:');
+    if(input===null){location.href='about:blank';throw new Error('cancelado');}
+    if(input===PASS){sessionStorage.setItem('veterAuth',PASS);ok=true;}
+    else alert('Passphrase incorrecta.');
+  }
+})();
+</script>
+
+<div class="wrap">
+  <h1>Admin Veter</h1>
+  <div class="grid">
+    <a class="card" href="ADMIN-VTR-ARG.html"><span class="flag">🇦🇷</span>ARG</a>
+    <a class="card" href="ADMIN-VTR-VZLA.html"><span class="flag">🇻🇪</span>VZLA</a>
+    <a class="card" href="ADMIN-VTR-SMR.html"><span class="flag">🇸🇲</span>SMR</a>
+    <a class="card" href="ADMIN-VTR-USA.html"><span class="flag">🇺🇸</span>USA</a>
+  </div>
+  <footer>Acceso privado · Veter</footer>
+</div>
+</body>
+</html>
