@@ -38,7 +38,8 @@ textarea{resize:vertical;min-height:50px}
 /* Partido cards */
 .pcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;margin-bottom:10px;box-shadow:var(--shadow);display:grid;grid-template-columns:5px 1fr}
 
-.ptable-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;margin-bottom:16px}
+.ptable-wrap{background:#FAFBFC;border:1px solid var(--border);border-radius:var(--rlg);overflow-x:auto;margin-bottom:16px}
+.ptable td.pcrew{white-space:nowrap}
 .ptable{border-collapse:collapse;width:100%}
 .ptable th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--t3);padding:8px 10px 6px;border-bottom:1px solid var(--border)}
 .ptable td{padding:8px 10px;font-size:12.5px;color:var(--t1);border-bottom:1px solid var(--border);vertical-align:middle}
@@ -59,7 +60,9 @@ textarea{resize:vertical;min-height:50px}
 .ppill .pmon{font-size:10px;color:var(--t3)}
 tr.obsrow td{border-top:none;padding:0 10px 8px}
 tr.obsrow:hover td{background:transparent!important}
-.pobs{display:flex;gap:6px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:7px;padding:6px 10px;font-size:11px;line-height:1.4}
+tr.haswarn td{border-bottom:none!important}
+.pobs{display:flex;align-items:flex-start;gap:7px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:7px;padding:6px 10px;font-size:11px;line-height:1.4}
+.pobs .ic{font-size:15px;line-height:1.1;flex-shrink:0}
 .pcard-stripe{width:5px;background:#00A859}
 .pcard-body{padding:12px 16px}
 .pcard-top{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;margin-bottom:10px}
@@ -264,7 +267,7 @@ function rPartidos(){
       h+=`<div class="ptable-wrap"><table class="ptable"><thead><tr>
         <th style="width:66px">Fecha</th><th>Partido</th>
         <th style="width:58px" class="pnum">Costo</th><th style="width:62px" class="pnum">Ingreso</th><th style="width:58px" class="pnum">Marg.</th>
-        <th style="width:320px">Crew</th><th style="width:70px"></th>
+        <th>Crew</th><th style="width:70px"></th>
       </tr></thead><tbody>`;
       tableOpen=true;
     }
@@ -276,8 +279,11 @@ function rPartidos(){
     const mc=margen>=0?'#059669':'#DC2626';
     const isTest=/^test/i.test(p.partido||'');
     const ingNum=ing;
-    const obsColor=(!isTest&&ingNum===0)?'#DC2626':(ingNum>0&&ingNum<375)?'#D97706':'#92400E';
-    const autoAlert=(!isTest&&ingNum===0)?'🚫 Sin ingreso':'';
+    const grave=!isTest&&ingNum<=349;
+    const obsBg=grave?'#FEF2F2':'#FFFBEB';
+    const obsBorder=grave?'#FCA5A5':'#FDE68A';
+    const obsColor=grave?'#B91C1C':'#92400E';
+    const autoAlert=(!isTest&&ingNum===0)?'Sin ingreso':'';
     const obsText=p.observaciones||autoAlert;
 
     const newDay = p.fecha!==curDia;
@@ -292,16 +298,16 @@ function rPartidos(){
       </span>`;
     }).join('');
 
-    h+=`<tr${newDay?' class="newday"':''}>
-      <td>${p.jornada?`<span class="pbadge">${p.jornada}</span> `:''}${fmtF(p.fecha)}</td>
+    h+=`<tr${newDay?' class="newday"':''}${obsText?' class="haswarn"':''}>
+      <td style="white-space:nowrap">${p.jornada?`<span class="pbadge">${p.jornada}</span> `:''}${fmtF(p.fecha)}${p.hora?' · '+p.hora:''}</td>
       <td><div style="font-weight:700">${p.partido}</div>${p.estadio?`<div style="font-size:10px;color:var(--t3)">📍 ${p.estadio}</div>`:''}</td>
       <td class="pnum" style="color:#DC2626;font-weight:700">${fmt(costo)}</td>
       <td class="pnum" style="color:#2563EB;font-weight:700">${fmt(ing)}</td>
       <td class="pnum" style="color:${mc};font-weight:700">${margen>=0?'+':''}${fmt(margen)}</td>
-      <td>${chips}</td>
+      <td class="pcrew">${chips}</td>
       <td class="print-hide" style="white-space:nowrap"><button class="bi" onclick="openEdit('${p.id}')" title="Editar">✎</button><button class="bd" onclick="delP('${p.id}')" title="Eliminar">✕</button></td>
     </tr>
-    ${obsText?`<tr class="obsrow"><td colspan="7"><div class="pobs" style="color:${obsColor}">⚠ ${obsText}</div></td></tr>`:''}`;
+    ${obsText?`<tr class="obsrow"><td colspan="7"><div class="pobs" style="background:${obsBg};border:1px solid ${obsBorder};color:${obsColor}"><span class="ic">⚠</span><span>${obsText}</span></div></td></tr>`:''}`;
   });
   closeTable();
   main.innerHTML=h;
