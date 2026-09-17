@@ -37,6 +37,29 @@ textarea{resize:vertical;min-height:50px}
 .empty h3{font-size:16px;color:var(--t2);margin-bottom:8px}
 /* Partido cards */
 .pcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;margin-bottom:10px;box-shadow:var(--shadow);display:grid;grid-template-columns:5px 1fr}
+
+.ptable-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;margin-bottom:16px}
+.ptable{border-collapse:collapse;width:100%}
+.ptable th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--t3);padding:8px 10px 6px;border-bottom:1px solid var(--border)}
+.ptable td{padding:8px 10px;font-size:12.5px;color:var(--t1);border-bottom:1px solid var(--border);vertical-align:middle}
+.ptable tbody tr:hover td{background:#F8FAFC}
+.ptable tr.newday td{border-top:2px solid var(--border)}
+.ptable .pnum{font-variant-numeric:tabular-nums;text-align:right}
+.pbadge{display:inline-block;padding:2px 6px;border-radius:5px;font-size:9.5px;font-weight:700;background:#EFF6FF;color:#1D4ED8}
+.ppill{display:inline-flex;align-items:baseline;gap:4px;border-radius:999px;padding:3px 9px 3px 7px;margin:2px 4px 2px 0;border:1.6px solid;cursor:pointer;user-select:none}
+.ppill.nopago{cursor:default}
+.ppill.adeuda{background:#FFFBEB;border-color:#F59E0B}
+.ppill.pagado{background:#F0FDF4;border-color:#16A34A}
+.ppill.nopago{background:#F8FAFC;border-color:var(--border)}
+.ppill .pdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ppill.r-coord .pdot{background:#1D4ED8}
+.ppill.r-oper .pdot{background:#D97706}
+.ppill.r-perio .pdot{background:#0D9488}
+.ppill .pnom{font-size:12.5px;font-weight:700;color:var(--t1)}
+.ppill .pmon{font-size:10px;color:var(--t3)}
+tr.obsrow td{border-top:none;padding:0 10px 8px}
+tr.obsrow:hover td{background:transparent!important}
+.pobs{display:flex;gap:6px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:7px;padding:6px 10px;font-size:11px;line-height:1.4}
 .pcard-stripe{width:5px;background:#00A859}
 .pcard-body{padding:12px 16px}
 .pcard-top{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;margin-bottom:10px}
@@ -215,11 +238,14 @@ function rPartidos(){
     main.innerHTML=h; return;
   }
 
-  let curMes=null;
+  let curMes=null, curDia=null, tableOpen=false;
+  const closeTable=()=>{ if(tableOpen){ h+=`</tbody></table></div>`; tableOpen=false; } };
+
   lista.forEach(p=>{
     const mes=getMes(p.fecha);
     if(mes!==curMes){
-      curMes=mes;
+      closeTable();
+      curMes=mes; curDia=null;
       const collapsed=ST.collapsedMeses.has(mes);
       h+=`<div style="display:flex;align-items:center;gap:10px;margin:${h.length>200?'20px':'0px'} 0 10px">
         <div style="flex:1;height:2px;background:linear-gradient(to right,#006B99,#CBD5E1)"></div>
@@ -234,6 +260,15 @@ function rPartidos(){
     }
     if(ST.collapsedMeses.has(mes))return;
 
+    if(!tableOpen){
+      h+=`<div class="ptable-wrap"><table class="ptable"><thead><tr>
+        <th style="width:66px">Fecha</th><th>Partido</th>
+        <th style="width:58px" class="pnum">Costo</th><th style="width:62px" class="pnum">Ingreso</th><th style="width:58px" class="pnum">Marg.</th>
+        <th style="width:320px">Crew</th><th style="width:70px"></th>
+      </tr></thead><tbody>`;
+      tableOpen=true;
+    }
+
     const eq=p.equipo||[];
     const costo=eq.reduce((s,e)=>s+(+e.monto||0),0);
     const ing=+p.ingreso||0;
@@ -241,50 +276,34 @@ function rPartidos(){
     const mc=margen>=0?'#059669':'#DC2626';
     const isTest=/^test/i.test(p.partido||'');
     const ingNum=ing;
-    const obsColor=(!isTest&&ingNum===0)?'obs-red':(ingNum>0&&ingNum<375)?'obs-orange':'obs-normal';
-    const autoAlert=(!isTest&&ingNum===0)?`<div class="pcard-obs obs-red">🚫 Sin ingreso</div>`:'';
-    const obsHtml=(p.observaciones?`<div class="pcard-obs ${obsColor}">⚠ ${p.observaciones}</div>`:'')+autoAlert;
-    const jornada=p.jornada?`<span style="background:#F1F5F9;border:1px solid var(--border);border-radius:20px;padding:2px 8px;font-size:11px;color:var(--t2);font-weight:600">${p.jornada}</span>`:'';
-    const estadioTag=p.estadio?`<span class="pcard-estadio">📍 ${p.estadio}</span>`:'';
+    const obsColor=(!isTest&&ingNum===0)?'#DC2626':(ingNum>0&&ingNum<375)?'#D97706':'#92400E';
+    const autoAlert=(!isTest&&ingNum===0)?'🚫 Sin ingreso':'';
+    const obsText=p.observaciones||autoAlert;
+
+    const newDay = p.fecha!==curDia;
+    curDia=p.fecha;
 
     const chips=eq.filter(e=>e.nombre).map((e,ei)=>{
       const esCoord=e.rol==='COORD';
-      const pagoBtn=esCoord?'':e.pagado
-        ?`<button onclick="togglePagoChip('${p.id}',${ei})" style="background:#DCFCE7;color:#15803D;border:none;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer">✓ pagado</button>`
-        :`<button onclick="togglePagoChip('${p.id}',${ei})" style="background:#FEF9C3;color:#854D0E;border:1px solid #FDE68A;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer">adeuda</button>`;
-      return `<div class="pcard-chip${e.pagado?' pagado':''}">
-        <span class="pcard-chip-rol">${e.rol}</span>
-        <div class="pcard-chip-sep"></div>
-        <span class="pcard-chip-nom">${e.nombre}</span>
-        <span class="pcard-chip-mon">${fmt(e.monto)}</span>
-        ${pagoBtn}
-      </div>`;
+      const statusClass=esCoord?'nopago':(e.pagado?'pagado':'adeuda');
+      const onclick=esCoord?'':` onclick="togglePagoChip('${p.id}',${ei})"`;
+      return `<span class="ppill ${e.rol==='COORD'?'r-coord':'r-oper'} ${statusClass}"${onclick} title="${e.pagado?'Pagado — clic para marcar como adeuda':'Adeuda — clic para marcar como pagado'}">
+        <span class="pdot"></span><span class="pnom">${e.nombre}</span><span class="pmon">${fmt(e.monto)}</span>
+      </span>`;
     }).join('');
 
-    h+=`<div class="pcard">
-      <div class="pcard-stripe"></div>
-      <div class="pcard-body">
-        <div class="pcard-top">
-          <div class="pcard-left">
-            <span class="pcard-num">#${p.num}</span>
-            ${jornada}
-            <span class="pcard-fecha">${fmtF(p.fecha)}${p.hora?' · '+p.hora:''}</span>
-            <span class="pcard-nombre">${p.partido}</span>
-            ${estadioTag}
-          </div>
-          <div class="pcard-right">
-            <div class="pcard-fin-item"><span class="pcard-fin-lbl">Costo</span><span class="pcard-fin-val" style="color:#DC2626">${fmt(costo)}</span></div>
-            <div class="pcard-fin-item"><span class="pcard-fin-lbl">Ingreso</span><span class="pcard-fin-val" style="color:#2563EB">${fmt(ing)}</span></div>
-            <div class="pcard-fin-item"><span class="pcard-fin-lbl">Margen</span><span class="pcard-fin-val" style="color:${mc}">${margen>=0?'+':''}${fmt(margen)}</span></div>
-            <button class="bi print-hide" onclick="openEdit('${p.id}')" title="Editar">✎</button>
-            <button class="bd print-hide" onclick="delP('${p.id}')" title="Eliminar">✕</button>
-          </div>
-        </div>
-        ${eq.filter(e=>e.nombre).length?`<div style="border-top:1px solid var(--border);margin:0 -16px;padding:10px 16px 0"><div class="pcard-eq">${chips}</div></div>`:''}
-        ${obsHtml}
-      </div>
-    </div>`;
+    h+=`<tr${newDay?' class="newday"':''}>
+      <td>${p.jornada?`<span class="pbadge">${p.jornada}</span> `:''}${fmtF(p.fecha)}</td>
+      <td><div style="font-weight:700">${p.partido}</div>${p.estadio?`<div style="font-size:10px;color:var(--t3)">📍 ${p.estadio}</div>`:''}</td>
+      <td class="pnum" style="color:#DC2626;font-weight:700">${fmt(costo)}</td>
+      <td class="pnum" style="color:#2563EB;font-weight:700">${fmt(ing)}</td>
+      <td class="pnum" style="color:${mc};font-weight:700">${margen>=0?'+':''}${fmt(margen)}</td>
+      <td>${chips}</td>
+      <td class="print-hide" style="white-space:nowrap"><button class="bi" onclick="openEdit('${p.id}')" title="Editar">✎</button><button class="bd" onclick="delP('${p.id}')" title="Eliminar">✕</button></td>
+    </tr>
+    ${obsText?`<tr class="obsrow"><td colspan="7"><div class="pobs" style="color:${obsColor}">⚠ ${obsText}</div></td></tr>`:''}`;
   });
+  closeTable();
   main.innerHTML=h;
 }
 

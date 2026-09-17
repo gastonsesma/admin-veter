@@ -42,6 +42,29 @@ textarea{resize:vertical;min-height:60px}
 .empty svg{margin:0 auto 14px;display:block;opacity:.35}
 /* Partido cards */
 .pcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;margin-bottom:10px;box-shadow:var(--shadow);display:grid;grid-template-columns:5px 1fr}
+
+.ptable-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--rlg);overflow:hidden;margin-bottom:16px}
+.ptable{border-collapse:collapse;width:100%}
+.ptable th{text-align:left;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--t3);padding:8px 10px 6px;border-bottom:1px solid var(--border)}
+.ptable td{padding:8px 10px;font-size:12.5px;color:var(--t1);border-bottom:1px solid var(--border);vertical-align:middle}
+.ptable tbody tr:hover td{background:#F8FAFC}
+.ptable tr.newday td{border-top:2px solid var(--border)}
+.ptable .pnum{font-variant-numeric:tabular-nums;text-align:right}
+.ppill{display:inline-flex;align-items:baseline;gap:4px;border-radius:999px;padding:3px 9px 3px 7px;margin:2px 4px 2px 0;border:1.6px solid;cursor:pointer;user-select:none}
+.ppill.nopago{cursor:default}
+.ppill.adeuda{background:#FFFBEB;border-color:#F59E0B}
+.ppill.pagado{background:#F0FDF4;border-color:#16A34A}
+.ppill.nopago{background:#F8FAFC;border-color:var(--border)}
+.ppill .pdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ppill.r-coord .pdot{background:#1D4ED8}
+.ppill.r-oper .pdot{background:#D97706}
+.ppill.r-perio .pdot{background:#0D9488}
+.ppill .pnom{font-size:12.5px;font-weight:700;color:var(--t1)}
+.ppill .pmon{font-size:10px;color:var(--t3)}
+.ppill .ppaga{font-size:9px;color:var(--t3)}
+tr.obsrow td{border-top:none;padding:0 10px 8px}
+tr.obsrow:hover td{background:transparent!important}
+.pobs{display:flex;gap:6px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:7px;padding:6px 10px;font-size:11px;line-height:1.4}
 .pcard-stripe{width:5px}
 .pcard-body{padding:12px 16px}
 .pcard-top{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;margin-bottom:10px}
@@ -247,11 +270,13 @@ function rPartidos(){
   if(lista.length===0&&!ST.loading){ h+=`<div class="empty"><svg width="44" height="44" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M3.375 19.5h17.25m-17.25 0a1.125 1.125 0 01-1.125-1.125M3.375 19.5h1.5C5.496 19.5 6 18.996 6 18.375m-3.75.125v-1.875m0 0a1.125 1.125 0 011.125-1.125h1.5a1.125 1.125 0 011.125 1.125M3.375 16.5v-1.5M21 16.5v-1.5m0 0a1.125 1.125 0 00-1.125-1.125h-1.5A1.125 1.125 0 0017.25 15m3.75 1.5V15"/></svg><h3>Sin partidos cargados</h3><p>Clic en "+ Nuevo partido" para agregar el primero.</p></div>`; main.innerHTML=h; return; }
 
   // Add toggleMes function inline context
-  let curMes = null;
+  let curMes = null, curDia = null, tableOpen = false;
+  const closeTable=()=>{ if(tableOpen){ h+='</tbody></table></div>'; tableOpen=false; } };
   lista.forEach(p=>{
     const mes = getMes(p.fecha);
     if(mes !== curMes){
-      curMes = mes;
+      closeTable();
+      curMes = mes; curDia = null;
       const collapsed = ST.collapsedMeses.has(mes);
       const isOld = mes < getMes(new Date().toISOString());
       h += `<div style="display:flex;align-items:center;gap:10px;margin:${h.length>200?'20px':'0px'} 0 10px">
@@ -268,68 +293,57 @@ function rPartidos(){
       if(collapsed){ return; }
     }
     if(ST.collapsedMeses.has(mes)) return;
+
+    if(!tableOpen){
+      h += `<div class="ptable-wrap"><table class="ptable"><thead><tr>
+        <th style="width:70px">Fecha</th><th>Partido</th>
+        <th style="width:58px" class="pnum">Costo</th><th style="width:62px" class="pnum">Ingreso</th><th style="width:58px" class="pnum">Marg.</th>
+        <th style="width:340px">Crew</th><th style="width:70px"></th>
+      </tr></thead><tbody>`;
+      tableOpen = true;
+    }
+
     const eq = p.equipo||[];
     const costo = eq.reduce((s,e)=>s+(+e.monto||0)+((e.extras||[]).reduce((a,x)=>a+(+x.monto||0),0)),0);
     const ing = +p.ingreso||0;
     const margen = ing-costo;
     const mc = margen>=0?'#059669':'#DC2626';
-    const stripe = STRIPE[p.tipo]||'#94A3B8';
+
+    const newDay = p.fecha!==curDia; curDia = p.fecha;
+
     const chips = eq.filter(e=>e.nombre).map((e,ei)=>{
       const pagaA = (PERSONAS[e.nombre]||{}).pagaA||e.nombre;
-      const pagaInfo = pagaA!==e.nombre ? `<span style="font-size:9px;color:var(--t3)">→${pagaA}</span>` : '';
+      const pagaInfo = pagaA!==e.nombre ? `<span class="ppaga">→${pagaA}</span>` : '';
       const extrasTotal = (e.extras||[]).reduce((a,x)=>a+(+x.monto||0),0);
       const totalMonto = (+e.monto||0)+extrasTotal;
-
       const esCoord = e.rol==='COORD';
-      const pagoBtn = esCoord ? '' : e.pagado
-        ? `<button onclick="togglePagoChip('${p.id}',${ei})" style="background:#DCFCE7;color:#15803D;border:none;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer">✓ pagado</button>`
-        : `<button onclick="togglePagoChip('${p.id}',${ei})" style="background:#FEF9C3;color:#854D0E;border:1px solid #FDE68A;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;cursor:pointer">adeuda</button>`;
-      const extraBadgeColored = (e.extras||[]).length ? (e.extras||[]).map(x=>`<span style="font-size:9px;background:${e.pagado?'#DCFCE7':'#FEF9C3'};color:${e.pagado?'#15803D':'#854D0E'};border-radius:4px;padding:1px 5px;font-weight:700">${x.tipo} +${fmt(x.monto)}</span>`).join(' ') : '';
-      return `<div class="pcard-chip${e.pagado?' pagado':''}">
-        <span class="pcard-chip-rol">${e.rol}</span>
-        <div class="pcard-chip-sep"></div>
-        <span class="pcard-chip-nom">${e.nombre}</span>
-        ${pagaInfo}
-        ${extraBadgeColored}
-        <span class="pcard-chip-mon">${fmt(totalMonto)}</span>
-        ${pagoBtn}
-      </div>`;
+      const rolCls = e.rol==='COORD'?'r-coord':e.rol==='OPERADOR'?'r-oper':'r-perio';
+      const statusClass = esCoord?'nopago':(e.pagado?'pagado':'adeuda');
+      const onclick = esCoord?'':` onclick="togglePagoChip('${p.id}',${ei})"`;
+      const extraTxt = (e.extras||[]).length ? ' +'+(e.extras||[]).map(x=>x.tipo).join(',') : '';
+      return `<span class="ppill ${rolCls} ${statusClass}"${onclick} title="${e.pagado?'Pagado — clic para marcar como adeuda':'Adeuda — clic para marcar como pagado'}">
+        <span class="pdot"></span><span class="pnom">${e.nombre}</span>${pagaInfo}<span class="pmon">${fmt(totalMonto)}${extraTxt}</span>
+      </span>`;
     }).join('');
+
     const ingNum = +p.ingreso||0;
     const isTest = /test/i.test(p.partido||'');
-    const obsColor = (!isTest && ingNum===0)
-      ? 'background:#FEE2E2;border-color:#F87171;color:#B91C1C;font-weight:600'
-      : (ingNum>=100 && ingNum<=300)
-      ? 'background:#FFEDD5;border-color:#FB923C;color:#C2410C;font-weight:600'
-      : 'background:#FEF9C3;border-color:#FACC15;color:#854D0E;font-weight:600';
-    const autoAlert = (!isTest && ingNum===0)
-      ? `<div class="pcard-obs" style="${obsColor}">🚫 Sin ingreso registrado</div>`
-      : (ingNum>=100 && ingNum<=300 && !p.observaciones)
-      ? `<div class="pcard-obs" style="${obsColor}">⚠ Ingreso reducido</div>` : '';
-    const obsHtml = (p.observaciones ? `<div class="pcard-obs" style="${obsColor}">⚠ ${p.observaciones}</div>` : '') + autoAlert;
-    h += `<div class="pcard">
-      <div class="pcard-stripe" style="background:${stripe}"></div>
-      <div class="pcard-body">
-        <div class="pcard-top">
-          <div class="pcard-left">
-            <span class="pcard-num">#${p.num}</span>
-            <span class="badge ${BADGE_CLS[p.tipo]||''}">${p.tipo}</span>
-            <span style="background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;border-radius:20px;padding:3px 12px;font-size:13px;font-weight:700;white-space:nowrap;font-feature-settings:'tnum'">${fmtF(p.fecha)}${p.hora?' · '+p.hora:''}</span>
-            <span class="pcard-nombre">${p.partido}</span>
-          </div>
-          <div class="pcard-right">
-            <div class="pcard-fin-item"><span class="pcard-fin-lbl">Costo</span><span class="pcard-fin-val" style="color:#DC2626">${fmt(costo)}</span></div>
-            <div class="pcard-fin-item"><span class="pcard-fin-lbl">Ingreso</span><span class="pcard-fin-val" style="color:#2563EB">${fmt(ing)}</span></div>
-            <div class="pcard-fin-item"><span class="pcard-fin-lbl">Margen</span><span class="pcard-fin-val" style="color:${mc}">${margen>=0?'+':''}${fmt(margen)}</span></div>
-            <button class="bi print-hide" onclick="openEdit('${p.id}')" title="Editar">✎</button>
-            <button class="bd print-hide" onclick="delP('${p.id}')" title="Eliminar">✕</button>
-          </div>
-        </div>
-        ${eq.filter(e=>e.nombre).length?`<div style="border-top:1px solid var(--border);margin:0 -16px;padding:10px 16px 0"><div class="pcard-eq">${chips}</div></div>`:''}
-        ${obsHtml}
-      </div>
-    </div>`;
+    const obsColor = (!isTest && ingNum===0) ? '#B91C1C' : (ingNum>=100 && ingNum<=300) ? '#C2410C' : '#854D0E';
+    const autoAlert = (!isTest && ingNum===0) ? '🚫 Sin ingreso registrado' : (ingNum>=100 && ingNum<=300 && !p.observaciones) ? '⚠ Ingreso reducido' : '';
+    const obsText = p.observaciones || autoAlert;
+
+    h += `<tr${newDay?' class="newday"':''}>
+      <td><span class="badge ${BADGE_CLS[p.tipo]||''}" style="font-size:9px;padding:2px 6px">${p.tipo}</span> ${fmtF(p.fecha)}${p.hora?' · '+p.hora:''}</td>
+      <td style="font-weight:700">${p.partido}</td>
+      <td class="pnum" style="color:#DC2626;font-weight:700">${fmt(costo)}</td>
+      <td class="pnum" style="color:#2563EB;font-weight:700">${fmt(ing)}</td>
+      <td class="pnum" style="color:${mc};font-weight:700">${margen>=0?'+':''}${fmt(margen)}</td>
+      <td>${chips}</td>
+      <td class="print-hide" style="white-space:nowrap"><button class="bi" onclick="openEdit('${p.id}')" title="Editar">✎</button><button class="bd" onclick="delP('${p.id}')" title="Eliminar">✕</button></td>
+    </tr>
+    ${obsText?`<tr class="obsrow"><td colspan="7"><div class="pobs" style="color:${obsColor}">⚠ ${obsText}</div></td></tr>`:''}`;
   });
+  closeTable();
   main.innerHTML=h;
 }
 
