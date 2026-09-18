@@ -289,7 +289,7 @@ function rPartidos(){
     const newDay = p.fecha!==curDia;
     curDia=p.fecha;
 
-    const chips=eq.filter(e=>e.nombre).map((e,ei)=>{
+    const chips=eq.map((e,i)=>({e,i})).filter(x=>x.e.nombre).map(({e,i:ei})=>{
       const esCoord=e.rol==='COORD';
       const statusClass=esCoord?'nopago':(e.pagado?'pagado':'adeuda');
       const onclick=esCoord?'':` onclick="togglePagoChip('${p.id}',${ei})"`;
@@ -414,6 +414,7 @@ async function togglePagoChip(pid,eqIndex){
   const p=ST.partidos.find(x=>x.id===pid);if(!p)return;
   const e=p.equipo[eqIndex];if(!e)return;
   e.pagado=!e.pagado;
+  render();
   setSt('load','↻ guardando...');
   try{await apiPost({action:'updatePartido',partido:p});setSt('ok','⬤ guardado');render();}
   catch(err){e.pagado=!e.pagado;setSt('err','⬤ error');render();}
