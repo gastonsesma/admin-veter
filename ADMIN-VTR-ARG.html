@@ -31,8 +31,11 @@ input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-
 .bd{background:#FEF2F2;border:1px solid #FECACA;color:#DC2626;cursor:pointer;border-radius:var(--radius);padding:5px 9px;font-size:12px}.bd:hover{background:#FEE2E2}
 .bi{background:transparent;border:1px solid var(--border);border-radius:var(--radius);color:var(--t3);cursor:pointer;padding:5px 9px;font-size:14px;transition:all .15s}.bi:hover{background:var(--bg);color:var(--text)}
 .badge{border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.4px;padding:3px 9px;white-space:nowrap}
+.pline1 .badge{width:88px;text-align:center;flex-shrink:0}
 .bg-bmetro{background:#DCFCE7;color:#15803D}.bg-usa{background:#DBEAFE;color:#1D4ED8}.bg-futsal{background:#BBF7D0;color:#064E3B}.bg-ligafem{background:#F3E8FF;color:#7C3AED}.bg-primera{background:#A7F3D0;color:#064E3B}.bg-tenis{background:#FEF9C3;color:#854D0E}.bg-custom{background:#F1F5F9;color:#334155}
 .cam-badge{background:#E0E7FF;color:#3730A3;border-radius:20px;font-size:10px;font-weight:600;padding:3px 8px;white-space:nowrap}
+.pline1 .cam-badge{width:52px;text-align:center;flex-shrink:0}
+.pline1 .cam-spacer{width:52px;flex-shrink:0}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
@@ -416,7 +419,7 @@ function rPartidos(){
     h+=`<div class="prow${newDay?' newday':''}">
       <div class="pline1">
         <span class="badge ${getBadge(p.tipo)}" style="${getBadgeStyle(p.tipo)}">${p.tipo}</span>
-        ${hasCam?`<span class="cam-badge">${camCount} cám</span>`:''}
+        ${hasCam?`<span class="cam-badge">${camCount} cám</span>`:'<span class="cam-spacer"></span>'}
         <span class="ptime">${fmtF(p.fecha)}${p.hora?' · '+p.hora:''}</span>
         <span class="pmatch">${p.partido}</span>
         <span class="pnum" style="color:#DC2626">${fmt(tot)}</span>
